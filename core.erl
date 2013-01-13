@@ -1,5 +1,5 @@
 -module(core).
--export([player_a/0, player_b/0, player_a_game_loop/0, player_b_game_loop/0, main/1, update_board/4]).
+-export([player_a/0, player_b/0, main/1, update_board/4, game_loop/1]).
 
 update_row (Row, Position, Move) ->
     Place = lists:nth(1, Row),
@@ -11,37 +11,23 @@ update_board (Board, X, Y, Move) ->
         lists:sublist(Board, X + 2, 3).
 
 player_a () ->
-    spawn(core, player_a_game_loop, []).
-
-player_a_game_loop () ->
-    receive
-        {next_move, Board, Pid} ->
-            io:format("Player A's turn. The board is:~n"),
-            io:format("~p~n------~n", [Board]),
-            Move = string:strip(io:get_line("Player A character: "), both, $\n),
-            {ok, X} = io:fread("Player A X: ", "~d"),
-            {ok, Y}  = io:fread("Player A Y: ", "~d"),
-            Pid ! {next_move, update_board(Board, lists:nth(1, X), lists:nth(1, Y), Move), self()},
-            player_a_game_loop();
-        _ ->
-            io:format("Invalid signal.")
-    end.
+    spawn(core, game_loop, ["A"]).
 
 player_b () ->
-    spawn(core, player_b_game_loop, []).
+    spawn(core, game_loop, ["B"]).
 
-player_b_game_loop () ->
+game_loop (Player) ->
     receive
         {next_move, Board, Pid} ->
-            io:format("Player B's turn. The board is:~n"),
+            io:format("Player ~s's turn. The board is:~n", [Player]),
             io:format("~p~n------~n", [Board]),
-            Move = string:strip(io:get_line("Player B character: "), both, $\n),
-            {ok,X} = io:fread("Player B X: ", "~d"),
-            {ok,Y}  = io:fread("Player B Y: ", "~d"),
+            Move = string:strip(io:get_line("Character: "), both, $\n),
+            {ok, X} = io:fread("X: ", "~d"),
+            {ok, Y}  = io:fread("Y: ", "~d"),
             Pid ! {next_move, update_board(Board, lists:nth(1, X), lists:nth(1, Y), Move), self()},
-            player_b_game_loop();
+            game_loop(Player);
         _ ->
-            io:format("Invalid signal.")
+            io:format("Invalid message.")
     end.
 
 main(_) ->
